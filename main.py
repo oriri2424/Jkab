@@ -6,8 +6,26 @@ import plotly.graph_objects as go
 from typing import Dict, Any, List
 
 # --- 1. 銘柄データ定義 ---
-# 日経225銘柄（主要銘柄のマッピング）
-NIKKEI225_MAP = {
+# カテゴリ別主要銘柄
+TSE_CATEGORIES = {
+    "日経225 (全銘柄)": [], 
+    "半導体・ハイテク": ["6857", "8035", "6920", "6146", "7735", "6723", "4062", "6861", "6981"],
+    "電気・精密機器": ["6501", "6758", "6702", "6762", "7741", "7733", "7751", "4543"],
+    "機械・産業機器": ["6301", "6367", "6326", "6273", "6113", "6471", "7011", "7013"],
+    "鉄鋼・非鉄・資源": ["5401", "5411", "5406", "5713", "5541", "5711", "5706", "1605"],
+    "金融・銀行・保険": ["8306", "8316", "8411", "8308", "8309", "8591", "8766", "8725", "8601", "8604"],
+    "総合商社": ["8001", "8002", "8031", "8053", "8058", "2768"],
+    "自動車・輸送機器": ["7203", "7267", "7201", "7269", "7272", "7202", "6902", "9101", "9147"],
+    "通信・IT・ゲーム": ["9432", "9433", "9434", "9984", "7974", "3659", "4755", "4689", "6098"],
+    "建設・プラント": ["1801", "1802", "1803", "1812", "1925", "1928", "1963"],
+    "不動産・住宅": ["8801", "8802", "8830", "3289", "8804"],
+    "化学・医薬品": ["4063", "4188", "4452", "4901", "4502", "4503", "4519", "4568"],
+    "食品・小売": ["2502", "2503", "2914", "9983", "8267", "3382", "9843", "7453"]
+}
+
+# 銘柄名マッピング
+STOCK_NAME_MAP = {
+    "5541": "太平洋金属",
     "4151": "協和キリン", "4502": "武田薬品", "4503": "アステラス製薬", "4506": "住友ファーマ",
     "4507": "塩野義製薬", "4519": "中外製薬", "4523": "エーザイ", "4568": "第一三共",
     "4578": "大塚ＨＤ", "4062": "イビデン", "6479": "ミネベアミツミ", "6501": "日立製作所",
@@ -49,7 +67,7 @@ NIKKEI225_MAP = {
     "5706": "三井金属", "5711": "三菱マテリアル", "5713": "住友金属鉱山", "5714": "ＤＯＷＡ",
     "5801": "古河電気工業", "5802": "住友電気工業", "5803": "フジクラ", "2768": "双日",
     "8001": "伊藤忠商事", "8002": "丸紅", "8015": "豊田通商", "8031": "三井物産",
-    "8035": "東京エレクトロン", "8053": "住友商事", "8058": "三菱商事", "1721": "コムシスＨＤ",
+    "8053": "住友商事", "8058": "三菱商事", "1721": "コムシスＨＤ",
     "1801": "大成建設", "1802": "大林組", "1803": "清水建設", "1808": "長谷工コーポレーション",
     "1812": "鹿島建設", "1925": "大和ハウス工業", "1928": "積水ハウス", "1963": "日揮ＨＤ",
     "5631": "日本製鋼所", "6103": "オークマ", "6113": "アマダ", "6273": "ＳＭＣ",
@@ -63,21 +81,9 @@ NIKKEI225_MAP = {
     "9022": "ＪＲ東海", "9064": "ヤマトＨＤ", "9147": "ＮＸＨＤ", "9101": "日本郵船",
     "9104": "商船三井", "9107": "川崎汽船", "9201": "日本航空", "9202": "ＡＮＡＨＤ",
     "9501": "東京電力ＨＤ", "9502": "中部電力", "9503": "関西電力", "9531": "東京ガス",
-    "9532": "大阪ガス"
+    "9532": "大阪ガス", "6367": "ダイキン工業", "6594": "ニデック", "8113": "ユニ・チャーム",
+    "9613": "エヌ・ティ・ティ・データ", "8035": "東京エレクトロン"
 }
-
-# 東証主要銘柄 (TOPIX100 + 選興銘柄 合計約300-500銘柄をカバーするターゲット)
-# 実運用上、主要な銘柄を網羅
-TSE_MAJOR_LIST = sorted(list(set(list(NIKKEI225_MAP.keys()) + [
-    "1801", "1925", "1928", "2502", "2503", "2801", "2802", "2914", "3382", "3402", "3407",
-    "4063", "4188", "4452", "4502", "4503", "4519", "4523", "4543", "4568", "4661", "4901",
-    "4911", "5020", "5108", "5401", "5802", "6098", "6146", "6273", "6301", "6367", "6501",
-    "6503", "6594", "6702", "6723", "6752", "6758", "6857", "6861", "6902", "6920", "6954",
-    "6981", "7011", "7203", "7267", "7741", "7751", "7974", "8001", "8031", "8035", "8053",
-    "8058", "8113", "8267", "8306", "8316", "8411", "8591", "8725", "8750", "8766", "8801",
-    "8802", "9020", "9022", "9101", "9201", "9432", "9433", "9434", "9502", "9503", "9613",
-    "9735", "9843", "9983", "9984"
-])))
 
 # --- 2. 補助ユーティリティ ---
 def clean_company_name(name: str) -> str:
@@ -87,7 +93,7 @@ def clean_company_name(name: str) -> str:
         name = name.replace(s, "").replace(s.upper(), "").replace(s.lower(), "")
     return name.strip()
 
-# --- 3. 分析ロジック (キャッシュ適用) ---
+# --- 3. 分析ロジック ---
 @st.cache_data(ttl=3600)
 def fetch_and_analyze(symbol: str):
     try:
@@ -99,9 +105,10 @@ def fetch_and_analyze(symbol: str):
             return None
 
         pure_symbol = symbol.replace(".T", "")
-        company_name = NIKKEI225_MAP.get(pure_symbol, clean_company_name(ticker.info.get('longName', symbol)))
+        company_name = STOCK_NAME_MAP.get(pure_symbol, clean_company_name(ticker.info.get('longName', symbol)))
 
         # 指標計算
+        df['MA5'] = ta.sma(df['Close'], length=5)
         df['MA25'] = ta.sma(df['Close'], length=25)
         df['MA75'] = ta.sma(df['Close'], length=75)
         df['MA200'] = ta.sma(df['Close'], length=200)
@@ -111,29 +118,27 @@ def fetch_and_analyze(symbol: str):
         df['Body'] = (df['Close'] - df['Open']).abs()
         df['LowShadow'] = df[['Open', 'Close']].min(axis=1) - df['Low']
 
+        # シグナル判定 (5日線と25日線の交差)
+        df['GC'] = (df['MA5'] > df['MA25']) & (df['MA5'].shift(1) <= df['MA25'].shift(1))
+        df['DC'] = (df['MA5'] < df['MA25']) & (df['MA5'].shift(1) >= df['MA25'].shift(1))
+
         latest = df.iloc[-1]
         prev = df.iloc[-2]
         price = latest['Close']
         
-        # MAタッチ判定
-        ma_configs = [("MA25", 25, 0.5), ("MA75", 75, 1.0), ("MA200", 200, 1.5)]
+        # ファンダメンタル情報の取得 (yfinanceの仕様に合わせて調整)
+        info = ticker.info
+        per = info.get('trailingPE')
+        pbr = info.get('priceToBook')
+        div_raw = info.get('dividendYield', 0) or 0
+        # 0.2を超える場合は既に%表記であると判断（例: 2.79% -> 2.79）
+        div_yield = div_raw if div_raw > 0.2 else div_raw * 100
+        
+        # MA乖離
         ma_info = {}
-        for m_name, _, thresh in ma_configs:
+        for m_name in ["MA25", "MA75", "MA200"]:
             val = float(latest[m_name])
-            prev_val = float(prev[m_name])
-            if pd.isna(val) or pd.isna(prev_val):
-                ma_info[m_name] = {"diff": 999.0, "up": False}
-                continue
-            ma_info[m_name] = {"diff": round((price - val) / val * 100, 2), "up": val > prev_val}
-
-        # 追加フィルタ判定
-        is_trend = ma_info["MA25"]["up"] or ma_info["MA75"]["up"] or ma_info["MA200"]["up"]
-        is_vol_dry = latest['VolAvg3'] < latest['VolAvg25']
-        is_hammer = latest['LowShadow'] > (latest['Body'] * 2) if latest['Body'] > 0 else latest['LowShadow'] > 5
-        is_rsi_rev = (latest['RSI'] <= 40) and (latest['RSI'] > prev['RSI'])
-
-        ma_tags = [n for n, _, t in ma_configs if abs(ma_info[n]["diff"]) <= t]
-        trends = [f"{n}↑" for n, _, _ in ma_configs if ma_info[n]["up"]]
+            ma_info[m_name] = {"val": val, "diff": round((price - val) / val * 100, 2), "up": val > prev[m_name]}
 
         return {
             "Symbol": pure_symbol, "Name": company_name, "Price": round(price, 1),
@@ -141,11 +146,14 @@ def fetch_and_analyze(symbol: str):
             "MA25_up": ma_info["MA25"]["up"], "MA75_up": ma_info["MA75"]["up"], "MA200_up": ma_info["MA200"]["up"],
             "RSI": round(latest['RSI'], 1) if not pd.isna(latest['RSI']) else None,
             "RSI_prev": round(prev['RSI'], 1) if not pd.isna(prev['RSI']) else None,
-            "VolAvg3": latest['VolAvg3'], "VolAvg25": latest['VolAvg25'],
-            "LowShadow": latest['LowShadow'], "Body": latest['Body'],
-            "IsTrend": is_trend, "IsVolDry": is_vol_dry, "IsHammer": is_hammer, "IsRsiRev": is_rsi_rev,
-            "MA_Tags": ", ".join(ma_tags) if ma_tags else "なし",
-            "Trends": ", ".join(trends) if trends else "なし"
+            "IsTrend": ma_info["MA25"]["up"] or ma_info["MA75"]["up"] or ma_info["MA200"]["up"],
+            "IsVolDry": latest['VolAvg3'] < latest['VolAvg25'],
+            "IsHammer": latest['LowShadow'] > (latest['Body'] * 2) if latest['Body'] > 0 else latest['LowShadow'] > 5,
+            "IsRsiRev": (latest['RSI'] <= 40) and (latest['RSI'] > prev['RSI']),
+            "PER": round(per, 1) if per else None,
+            "PBR": round(pbr, 2) if pbr else None,
+            "DivYield": round(div_yield, 2),
+            "Volume": int(latest['Volume'])
         }, df
     except Exception:
         return None
@@ -160,32 +168,52 @@ st.markdown("""
 </style>
 """, unsafe_allow_html=True)
 
-st.title("🏹 日本株スクリーナー Pro (最終完成版)")
+st.title("🏹 日本株スクリーナー Pro (最終版)")
 
 # サイドバー
 st.sidebar.header("🔍 スキャン設定")
-scan_mode = st.sidebar.radio("対象範囲", ["日経225", "東証主要銘柄"])
+category_sel = st.sidebar.selectbox("スキャン対象 (ジャンル)", list(TSE_CATEGORIES.keys()))
 
 st.sidebar.divider()
 st.sidebar.header("🎯 判定ロジック")
-f_trend = st.sidebar.checkbox("上昇トレンド限定 (MA上向き)", value=True)
-f_vol = st.sidebar.checkbox("売り枯れ判定 (出来高減)", value=False)
-f_shadow = st.sidebar.checkbox("下ヒゲ検知 (底打ち反発)", value=False)
-f_rsi = st.sidebar.checkbox("RSI反転 (40以下かつ上昇)", value=False)
+st.sidebar.subheader("MAタッチ判定 (複数選択可)")
+use_ma25 = st.sidebar.checkbox("25日線タッチ", value=True)
+tol_ma25 = st.sidebar.slider("25日線 許容誤差 (±%)", 0.0, 5.0, 0.5, 0.1)
+use_ma75 = st.sidebar.checkbox("75日線タッチ", value=True)
+tol_ma75 = st.sidebar.slider("75日線 許容誤差 (±%)", 0.0, 5.0, 1.0, 0.1)
+use_ma200 = st.sidebar.checkbox("200日線タッチ", value=True)
+tol_ma200 = st.sidebar.slider("200日線 許容誤差 (±%)", 0.0, 5.0, 1.5, 0.1)
 
-run_btn = st.sidebar.button("スキャン実行", type="primary", use_container_width=True)
+st.sidebar.subheader("追加フィルタ")
+f_trend = st.sidebar.checkbox("上昇トレンド限定 (MA上向き)", value=True)
+f_vol_dry = st.sidebar.checkbox("売り枯れ判定 (出来高減少)", value=False)
+f_shadow = st.sidebar.checkbox("下ヒゲ検知 (反発期待)", value=False)
+f_rsi = st.sidebar.checkbox("RSI反転 (40以下から反転)", value=False)
+f_vol_100k = st.sidebar.checkbox("出来高10万株以上", value=True)
+
+st.sidebar.divider()
+st.sidebar.header("💼 ファンダメンタル")
+max_per = st.sidebar.slider("PER 15倍以下など (上限)", 0.0, 100.0, 100.0)
+max_pbr = st.sidebar.slider("PBR 1倍以下など (上限)", 0.0, 10.0, 10.0)
+min_yield = st.sidebar.slider("配当利回り %以上 (下限)", 0.0, 10.0, 0.0)
+
+st.sidebar.divider()
+st.sidebar.header("📈 チャート設定")
+show_signals = st.sidebar.toggle("売買シグナルを表示 (5/25 GC・DC)", value=True)
+
+run_btn = st.sidebar.button("スキャン開始", type="primary", use_container_width=True)
 
 if 'res' not in st.session_state:
     st.session_state.res, st.session_state.plots, st.session_state.sel = None, {}, None
 
 if run_btn:
-    tickers = list(NIKKEI225_MAP.keys()) if scan_mode == "日経225" else TSE_MAJOR_LIST
+    tickers = list(STOCK_NAME_MAP.keys()) if category_sel == "日経225 (全銘柄)" else TSE_CATEGORIES[category_sel]
     results, plots = [], {}
     prog = st.progress(0)
     status = st.empty()
     
     for i, s in enumerate(tickers):
-        status.text(f"スキャン中... {s} ({i+1}/{len(tickers)})")
+        status.text(f"分析中... {s} ({i+1}/{len(tickers)})")
         analysis = fetch_and_analyze(s)
         if analysis:
             r, d = analysis
@@ -193,56 +221,138 @@ if run_btn:
         prog.progress((i + 1) / len(tickers))
     
     st.session_state.res, st.session_state.plots = results, plots
-    status.success("スキャン完了！")
+    st.success(f"スキャン完了！ ({len(results)}銘柄のデータを取得)")
 
 # 表示エリア
 if st.session_state.res:
     df_all = pd.DataFrame(st.session_state.res)
     
-    # フィルタ
     def filter_logic(df):
-        # MAタッチ(いずれか)
-        mask = (df['MA25_diff'].abs() <= 0.5) | (df['MA75_diff'].abs() <= 1.0) | (df['MA200_diff'].abs() <= 1.5)
-        f_df = df[mask].copy()
+        # MAタッチ判定 (選択時のみ適用、OR条件)
+        ma_filters = []
+        if use_ma25: ma_filters.append(df['MA25_diff'].abs() <= tol_ma25)
+        if use_ma75: ma_filters.append(df['MA75_diff'].abs() <= tol_ma75)
+        if use_ma200: ma_filters.append(df['MA200_diff'].abs() <= tol_ma200)
+        
+        if ma_filters:
+            ma_mask = ma_filters[0]
+            for f in ma_filters[1:]:
+                ma_mask |= f
+            f_df = df[ma_mask].copy()
+        else:
+            f_df = df.copy() # MA判定チェックなしなら全件表示
+            
         if f_trend: f_df = f_df[f_df['IsTrend']]
-        if f_vol: f_df = f_df[f_df['IsVolDry']]
+        if f_vol_dry: f_df = f_df[f_df['IsVolDry']]
         if f_shadow: f_df = f_df[f_df['IsHammer']]
         if f_rsi: f_df = f_df[f_df['IsRsiRev']]
+        if f_vol_100k: f_df = f_df[f_df['Volume'] >= 100000]
+        
+        # ファンダメンタルフィルタ (値がある場合のみ、0を除く)
+        if max_per < 100:
+            f_df = f_df[f_df['PER'].fillna(999) <= max_per]
+        if max_pbr < 10:
+            f_df = f_df[f_df['PBR'].fillna(99) <= max_pbr]
+        if min_yield > 0:
+            f_df = f_df[f_df['DivYield'].fillna(0) >= min_yield]
+        
         return f_df
 
-    df_f = filter_logic(df_all)
+    df_filtered = filter_logic(df_all)
     
-    c1, c2 = st.columns([1, 1.2])
+    c1, c2 = st.columns([1, 1.3])
     
     with c1:
-        st.subheader(f"📋 抽出結果: {len(df_f)} 件")
-        if df_f.empty:
-            st.info("条件に合う銘柄はありませんでした。設定を緩めてみてください。")
+        st.subheader(f"📋 抽出結果: {len(df_filtered)} 件")
+        if df_filtered.empty:
+            st.info("条件に合う銘柄はありませんでした。フィルタを緩和してください。")
         else:
-            disp = df_f[["Symbol", "Name", "Price", "RSI", "MA_Tags"]].rename(columns={
-                "Symbol": "コード", "Name": "銘柄名", "Price": "現在値", "RSI": "RSI", "MA_Tags": "タッチMA"
+            # 表示データの加工
+            def get_touched_ma(row):
+                t = []
+                if abs(row['MA25_diff']) <= tol_ma25: t.append("25日")
+                if abs(row['MA75_diff']) <= tol_ma75: t.append("75日")
+                if abs(row['MA200_diff']) <= tol_ma200: t.append("200日")
+                return ", ".join(t) if t else "-"
+            
+            def get_primary_kairi(row):
+                # 選択されているMAのうち、最も近いものの乖離率を返す
+                diffs = []
+                if use_ma25: diffs.append(row['MA25_diff'])
+                if use_ma75: diffs.append(row['MA75_diff'])
+                if use_ma200: diffs.append(row['MA200_diff'])
+                if not diffs: return row['MA25_diff'] # デフォルト
+                # 絶対値が最小（最も近い）ものを選択
+                return min(diffs, key=abs)
+
+            df_filtered['タッチMA'] = df_filtered.apply(get_touched_ma, axis=1)
+            df_filtered['乖離率'] = df_filtered.apply(get_primary_kairi, axis=1)
+            
+            disp = df_filtered[["Symbol", "Name", "Price", "乖離率", "RSI", "タッチMA"]].rename(columns={
+                "Symbol": "コード", "Name": "銘柄名", "Price": "現在値", "乖離率": "乖離率(%)", "RSI": "RSI"
             })
-            evt = st.dataframe(disp, use_container_width=True, hide_index=True, on_select="rerun", selection_mode="single-row")
-            if evt and evt.get("selection") and evt["selection"]["rows"]:
-                st.session_state.sel = df_f.iloc[evt["selection"]["rows"][0]]["Symbol"]
+            
+            # スキャン統計の表示
+            st.caption(f"全体 {len(df_all)} 銘柄中 {len(df_filtered)} 銘柄が条件に一致")
+            
+            selection = st.dataframe(
+                disp, use_container_width=True, hide_index=True, 
+                on_select="rerun", selection_mode="single-row"
+            )
+            
+            if selection and selection.get("selection") and selection["selection"]["rows"]:
+                st.session_state.sel = df_filtered.iloc[selection["selection"]["rows"][0]]["Symbol"]
 
     with c2:
         if st.session_state.sel and st.session_state.sel in st.session_state.plots:
             res_s, df_s = st.session_state.plots[st.session_state.sel]
-            st.subheader(f"📊 {res_s['Name']} ({st.session_state.sel})")
+            st.subheader(f"📈 {res_s['Name']} ({st.session_state.sel})")
             
             fig = go.Figure()
-            fig.add_trace(go.Candlestick(x=df_s.index, open=df_s['Open'], high=df_s['High'], low=df_s['Low'], close=df_s['Close'], name='価格'))
+            fig.add_trace(go.Candlestick(x=df_s.index, open=df_s['Open'], high=df_s['High'], low=df_s['Low'], close=df_s['Close'], name='株価'))
             fig.add_trace(go.Scatter(x=df_s.index, y=df_s['MA25'], name='25日', line=dict(color='yellow', width=1)))
             fig.add_trace(go.Scatter(x=df_s.index, y=df_s['MA75'], name='75日', line=dict(color='orange', width=1)))
             fig.add_trace(go.Scatter(x=df_s.index, y=df_s['MA200'], name='200日', line=dict(color='red', width=1)))
             
-            fig.update_layout(height=400, template="plotly_dark", xaxis_rangeslider_visible=False, margin=dict(l=10, r=10, t=10, b=10))
+            # 売買シグナルの表示
+            if show_signals:
+                gc_df = df_s[df_s['GC']]
+                dc_df = df_s[df_s['DC']]
+                fig.add_trace(go.Scatter(
+                    x=gc_df.index, y=gc_df['Low'] * 0.98,
+                    mode='markers+text', name='BUY (GC)',
+                    marker=dict(symbol='triangle-up', size=12, color='lime'),
+                    text="▲BUY", textposition="bottom center"
+                ))
+                fig.add_trace(go.Scatter(
+                    x=dc_df.index, y=dc_df['High'] * 1.02,
+                    mode='markers+text', name='SELL (DC)',
+                    marker=dict(symbol='triangle-down', size=12, color='red'),
+                    text="▼SELL", textposition="top center"
+                ))
+            
+            fig.update_layout(height=450, template="plotly_dark", xaxis_rangeslider_visible=False, margin=dict(l=10, r=10, t=10, b=10))
             st.plotly_chart(fig, use_container_width=True)
             
-            m1, m2, m3 = st.columns(3)
-            m1.metric("現在値", f"¥{res_s['Price']}")
+            m1, m2, m3, m4 = st.columns(4)
+            m1.metric("株価", f"¥{res_s['Price']}")
             m2.metric("RSI", f"{res_s['RSI']}", delta=round(res_s['RSI'] - res_s['RSI_prev'], 1) if res_s['RSI_prev'] else None)
-            m3.metric("MA傾向", res_s['Trends'].split(",")[0] if res_s['Trends'] != "なし" else "平坦")
+            
+            trends = []
+            if res_s['MA25_up']: trends.append("25日↑")
+            if res_s['MA75_up']: trends.append("75日↑")
+            if res_s['MA200_up']: trends.append("200日↑")
+            m3.metric("傾向", trends[0] if trends else "下向き")
+            
+            m4.metric("配当利回り", f"{res_s['DivYield']}%")
+
+            # 詳細ファンダメンタル表示
+            f1, f2, f3 = st.columns(3)
+            f1.metric("PER", f"{res_s['PER']}倍" if res_s['PER'] else "-")
+            f2.metric("PBR", f"{res_s['PBR']}倍" if res_s['PBR'] else "-")
+            f3.metric("出来高", f"{res_s['Volume']:,}枚")
         else:
             st.info("👈 左側のリストから銘柄を選択してチャートを表示")
+
+st.sidebar.markdown("---")
+st.sidebar.caption("Data: Yahoo Finance")
