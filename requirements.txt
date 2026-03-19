@@ -1,5 +1,5 @@
+streamlit
 yfinance
 pandas
-pandas-ta
 plotly
-streamlit
+pandas_ta
